@@ -59,13 +59,18 @@ const commands = [
         name: 'getstats',
         description: 'Get a 7 day rolling tally of user messages',
         async execute(message) {
-            //message.channel.send('Gathering data...');
-            const channelStats = await getChannelStats(message);
-
-            console.log('Channel stats',channelStats);
+            const scoreboard = await getChannelStats(message);
+            return message.channel.send(makeScoreboard(message.channel.name, scoreboard));
         },
     }
 ];
+
+const makeScoreboard = (channelName, scoreboard) =>
+    new Discord.MessageEmbed()
+        .setColor('#0099ff')
+        .setTitle(`#${channelName} scoreboard`)
+        .setDescription('Top five contributors by message count')
+        .addFields(scoreboard)
 
 const setCommands = () => {
     client.commands = new Discord.Collection();
@@ -75,6 +80,7 @@ const setCommands = () => {
 };
 
 const followChannel = async (message) =>
+    // todo: if moderator
     await db.collection('channels').doc(message.channel.id).set({
         name: message.channel.name,
         time: Date.now(),
@@ -82,6 +88,7 @@ const followChannel = async (message) =>
     });
 
 const unfollowChannel = async (message) =>
+    // todo: if moderator
     await db.collection('channels').doc(message.channel.id).set({
         name: message.channel.name,
         time: Date.now(),
@@ -106,14 +113,15 @@ const getChannelStats = async (message) => {
         const userTally = await channelUserRef.doc(user.id).collection('messages').get();
 
         scoreboard.push({
-            user: authorName,
-            score: userTally.size
+            name: authorName,
+            value: `${userTally.size}`,
+            inline: true
         })
     }
 
-    scoreboard.sort((a, b) => parseFloat(a.score) - parseFloat(b.score));
+    scoreboard.sort((a, b) => parseFloat(b.value) - parseFloat(a.value));
 
-    return scoreboard;
+    return scoreboard.slice(0, 5);
 };
 
 const isWatchingChannel = async (id) =>

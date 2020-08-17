@@ -1,0 +1,24 @@
+{
+  "name": "portalbot",
+  "version": "1.0.0",
+  "description": "https://discordapp.com/oauth2/authorize?client_id=744740849547739248&scope=bot&permissions=75840",
+  "main": "index.js",
+  "dependencies": {
+    "discord.js": "^12.3.1",
+    "firebase-admin": "^9.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ryandury/Portal-Bot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ryandury/Portal-Bot/issues"
+  },
+  "homepage": "https://github.com/ryandury/Portal-Bot#readme"
+}
