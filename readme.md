@@ -16,3 +16,10 @@ View top contributors for channel
 Stop following channel
 
     pb remove scoreboard
+
+### Todo
+- Separate command files
+- Documentation for setting up a dev environment
+- A "get commands" command
+- Cache tally instead of enumerating through messages each time
+- Only allow moderators to add or remove scoreboard
