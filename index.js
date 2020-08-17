@@ -69,7 +69,7 @@ const makeScoreboard = (channelName, scoreboard) =>
     new Discord.MessageEmbed()
         .setColor('#0099ff')
         .setTitle(`#${channelName} scoreboard`)
-        .setDescription('Top five contributors by message count')
+        .setDescription('Top contributors in the last 7 days')
         .addFields(scoreboard)
 
 const setCommands = () => {
