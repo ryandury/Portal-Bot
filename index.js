@@ -23,6 +23,7 @@ const commands = [
         description: 'Start tracking user engagement by counting total messages per user',
         execute(message) {
             message.channel.send('Okay, keeping a tally of user messages for this channel');
+            console.log('Following channel', message.channel.name);
             return followChannel(message);
         },
     },
@@ -31,6 +32,7 @@ const commands = [
         description: 'Stop tracking user engagement by counting total messages per user',
         execute(message) {
             message.channel.send('Okay, no longer keeping a tally of messages here');
+            console.log('Unfollowing channel', message.channel.name);
             return unfollowChannel(message);
         },
     },
