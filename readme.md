@@ -1,4 +1,4 @@
-### Invite Code for Bot
+### Invite Code
 https://discordapp.com/oauth2/authorize?client_id=744740849547739248&scope=bot&permissions=75840
 
 ### Bot Commands

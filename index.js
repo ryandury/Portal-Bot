@@ -21,7 +21,7 @@ client.on('message', async message => {
     if (message.author.bot) return;
 
     const watchingChannel = await isWatchingChannel(message.channel.id);
-    if (watchingChannel) await addUserCount(message.author, message.channel);
+    if (watchingChannel) await addToAuthorTally(message.author, message.channel);
 
     if (!message.content.startsWith(prefix)) return;
 
@@ -38,32 +38,38 @@ client.on('message', async message => {
     }
 });
 
+const commands = [
+    {
+        name: 'followchannel',
+        description: 'Start tracking user engagement by counting total messages per user',
+        execute(message) {
+            message.channel.send('Okay, keeping a tally of user messages for this channel');
+            return followChannel(message);
+        },
+    },
+    {
+        name: 'unfollowchannel',
+        description: 'Stop tracking user engagement by counting total messages per user',
+        execute(message) {
+            message.channel.send('Okay, no longer keeping a tally of user messages for this channel');
+            return unfollowChannel(message);
+        },
+    },
+    {
+        name: 'getstats',
+        description: 'Get a 7 day rolling tally of user messages',
+        execute(message) {
+            message.channel.send('Okay, no longer keeping a tally of user messages for this channel');
+            return getStats(message);
+        },
+    }
+];
 const setCommands = () => {
     client.commands = new Discord.Collection();
     for (const command of commands) {
         client.commands.set(command.name, command);
     }
 }
-
-const commands =
-    [
-        {
-            name: 'followchannel',
-            description: 'Start tracking user engagement by counting total messages per user',
-            execute(message) {
-                message.channel.send('Okay, keeping a tally of user messages for this channel');
-                return followChannel(message);
-            },
-        },
-        {
-            name: 'unfollowchannel',
-            description: 'Stop tracking user engagement by counting total messages per user',
-            execute(message) {
-                message.channel.send('Okay, no longer keeping a tally of user messages for this channel');
-                return unfollowChannel(message);
-            },
-        }
-    ];
 
 const followChannel = async (message) =>
     await db.collection('channels').doc(message.channel.id).set({
@@ -80,6 +86,12 @@ const unfollowChannel = async (message) =>
         follow: false,
     })
 
+const getStats = async (message) => {
+    const channelUsers = await db.collection('channels').doc(message.channel.id).get();
+
+    console.log(channelUsers);
+}
+
 const isWatchingChannel = async (id) =>
     await db
         .collection('channels')
@@ -91,17 +103,21 @@ const isWatchingChannel = async (id) =>
             return data.follow;
         });
 
-const addUserCount = async (author, channel) =>
+const addToAuthorTally = async (author, channel) =>
     await db
         .collection('channels')
         .doc(channel.id)
-        .collection(author.id)
+        .collection('users')
+        .doc(author.id)
+        .collection('messages')
         .add(
-            {
+{
                 authorName: author.username,
                 channelName: channel.name,
                 guildName: channel.guild.name,
-                time: Date.now()
+                createdAt: Date.now()
             });
+
+// Get a rolling 7 day stat of channel...
 
 client.login(token);
