@@ -2,7 +2,7 @@ const {token, prefix, databaseURL} = require('./config.js');
 const Discord = require('discord.js');
 const admin = require('firebase-admin');
 const client = new Discord.Client({partials: ['MESSAGE', 'CHANNEL', 'REACTION']});
-const serviceAccount = require("./portal-bot-db-key.json");
+const serviceAccount = require("./db.config.json");
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -58,18 +58,21 @@ const commands = [
     {
         name: 'getstats',
         description: 'Get a 7 day rolling tally of user messages',
-        execute(message) {
-            message.channel.send('Okay, no longer keeping a tally of user messages for this channel');
-            return getStats(message);
+        async execute(message) {
+            //message.channel.send('Gathering data...');
+            const channelStats = await getChannelStats(message);
+
+            console.log('Channel stats',channelStats);
         },
     }
 ];
+
 const setCommands = () => {
     client.commands = new Discord.Collection();
     for (const command of commands) {
         client.commands.set(command.name, command);
     }
-}
+};
 
 const followChannel = async (message) =>
     await db.collection('channels').doc(message.channel.id).set({
@@ -78,46 +81,74 @@ const followChannel = async (message) =>
         follow: true,
     });
 
-
 const unfollowChannel = async (message) =>
     await db.collection('channels').doc(message.channel.id).set({
         name: message.channel.name,
         time: Date.now(),
         follow: false,
-    })
+    });
 
-const getStats = async (message) => {
-    const channelUsers = await db.collection('channels').doc(message.channel.id).get();
+const getChannelStats = async (message) => {
+    console.log('Generating stats for channel:', message.channel.name);
 
-    console.log(channelUsers);
-}
+    let channelUserRef = db.collection('channels').doc(message.channel.id).collection('users');
+    // todo: Only get users that have posted in the last seven days (lastUpdated)
+    const channelUsers = await channelUserRef.get();
+
+    let scoreboard = [];
+    let channelUserCollection = [];
+
+    channelUsers.forEach( user => channelUserCollection.push(user));
+
+    for (const user of channelUserCollection)  {
+        const { authorName } = user.data();
+        // todo: Only get messages from the last seven days
+        const userTally = await channelUserRef.doc(user.id).collection('messages').get();
+
+        scoreboard.push({
+            user: authorName,
+            score: userTally.size
+        })
+    }
+
+    scoreboard.sort((a, b) => parseFloat(a.score) - parseFloat(b.score));
+
+    return scoreboard;
+};
 
 const isWatchingChannel = async (id) =>
     await db
         .collection('channels')
         .doc(id)
         .get()
-        .then(snap => {
-            if (!snap.exists) return false;
-            const data = snap.data();
+        .then(channel => {
+            if (!channel.exists) return false;
+            const data = channel.data();
             return data.follow;
         });
 
-const addToAuthorTally = async (author, channel) =>
-    await db
+const addToAuthorTally = async (author, channel) => {
+    let userCollection = db
         .collection('channels')
         .doc(channel.id)
         .collection('users')
-        .doc(author.id)
+        .doc(author.id);
+
+    await userCollection
+        .set({
+            authorName: author.username,
+            lastUpdated: Date.now()
+        });
+
+    await userCollection
         .collection('messages')
         .add(
-{
+            {
                 authorName: author.username,
                 channelName: channel.name,
                 guildName: channel.guild.name,
                 createdAt: Date.now()
             });
-
-// Get a rolling 7 day stat of channel...
+};
 
 client.login(token);

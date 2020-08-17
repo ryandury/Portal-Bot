@@ -1,4 +1,4 @@
 /node_modules/*
 .idea
 config.js
-portal-bot-db-key.json
+db.config.json
