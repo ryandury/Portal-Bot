@@ -1,8 +1,9 @@
 const {token, prefix, databaseURL} = require('./config.js');
+const serviceAccount = require("./db.config.json");
+
 const Discord = require('discord.js');
 const admin = require('firebase-admin');
 const client = new Discord.Client({partials: ['MESSAGE', 'CHANNEL', 'REACTION']});
-const serviceAccount = require("./db.config.json");
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -13,34 +14,12 @@ const db = admin.firestore();
 
 client.once('ready', async () => {
     console.log('Discord Ready');
-    console.log(`Your prefix is ${prefix}`);
     setCommands();
-});
-
-client.on('message', async message => {
-    if (message.author.bot) return;
-
-    const watchingChannel = await isWatchingChannel(message.channel.id);
-    if (watchingChannel) await addToAuthorTally(message.author, message.channel);
-
-    if (!message.content.startsWith(prefix)) return;
-
-    const args = message.content.slice(prefix.length).trim().split(/ +/);
-    const command = args.shift().toLowerCase();
-
-    if (!client.commands.has(command)) return;
-
-    try {
-        client.commands.get(command).execute(message, args);
-    } catch (error) {
-        console.error(error);
-        message.reply('there was an error trying to execute that command!');
-    }
 });
 
 const commands = [
     {
-        name: 'followchannel',
+        name: 'add scoreboard',
         description: 'Start tracking user engagement by counting total messages per user',
         execute(message) {
             message.channel.send('Okay, keeping a tally of user messages for this channel');
@@ -48,36 +27,22 @@ const commands = [
         },
     },
     {
-        name: 'unfollowchannel',
+        name: 'remove scoreboard',
         description: 'Stop tracking user engagement by counting total messages per user',
         execute(message) {
-            message.channel.send('Okay, no longer keeping a tally of user messages for this channel');
+            message.channel.send('Okay, no longer keeping a tally of messages here');
             return unfollowChannel(message);
         },
     },
     {
-        name: 'getstats',
+        name: 'get scoreboard',
         description: 'Get a 7 day rolling tally of user messages',
         async execute(message) {
             const scoreboard = await getChannelStats(message);
-            return message.channel.send(makeScoreboard(message.channel.name, scoreboard));
+            return message.channel.send(displayScoreboard(message.channel.name, scoreboard));
         },
     }
 ];
-
-const makeScoreboard = (channelName, scoreboard) =>
-    new Discord.MessageEmbed()
-        .setColor('#0099ff')
-        .setTitle(`#${channelName} scoreboard`)
-        .setDescription('Top contributors in the last 7 days')
-        .addFields(scoreboard)
-
-const setCommands = () => {
-    client.commands = new Discord.Collection();
-    for (const command of commands) {
-        client.commands.set(command.name, command);
-    }
-};
 
 const followChannel = async (message) =>
     // todo: if moderator
@@ -99,7 +64,7 @@ const getChannelStats = async (message) => {
     console.log('Generating stats for channel:', message.channel.name);
 
     let channelUserRef = db.collection('channels').doc(message.channel.id).collection('users');
-    // todo: Only get users that have posted in the last seven days (lastUpdated)
+    // todo: Only fetch where users have recent messages (lastUpdated)
     const channelUsers = await channelUserRef.get();
 
     let scoreboard = [];
@@ -124,7 +89,28 @@ const getChannelStats = async (message) => {
     return scoreboard.slice(0, 5);
 };
 
-const isWatchingChannel = async (id) =>
+client.on('message', async message => {
+    if (message.author.bot) return;
+
+    const isFollowingChannel = await followingChannel(message.channel.id);
+    if (isFollowingChannel) await addToAuthorTally(message.author, message.channel);
+
+    if (!message.content.startsWith(prefix)) return;
+
+    const args = message.content.slice(prefix.length).trim();
+    const command = args.toLowerCase();
+
+    if (!client.commands.has(command)) return;
+
+    try {
+        client.commands.get(command).execute(message, args);
+    } catch (error) {
+        console.error(error);
+        message.reply('there was an error trying to execute that command!');
+    }
+});
+
+const followingChannel = async (id) =>
     await db
         .collection('channels')
         .doc(id)
@@ -134,6 +120,13 @@ const isWatchingChannel = async (id) =>
             const data = channel.data();
             return data.follow;
         });
+
+const displayScoreboard = (channelName, scoreboard) =>
+    new Discord.MessageEmbed()
+        .setColor('#0099ff')
+        .setTitle(`#${channelName} scoreboard`)
+        .setDescription('Top contributors in the last 7 days')
+        .addFields(scoreboard);
 
 const addToAuthorTally = async (author, channel) => {
     let userCollection = db
@@ -157,6 +150,13 @@ const addToAuthorTally = async (author, channel) => {
                 guildName: channel.guild.name,
                 createdAt: Date.now()
             });
+};
+
+const setCommands = () => {
+    client.commands = new Discord.Collection();
+    for (const command of commands) {
+        client.commands.set(command.name, command);
+    }
 };
 
 client.login(token);

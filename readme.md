@@ -7,12 +7,12 @@ A scoreboard bot for Discord servers
 ### Bot Commands
 Start following a channel to generate stats
 
-    !apogee followchannel
+    !pb add scoreboard
 
 View top contributors for channel
 
-    !apogee getstats
+    !pb get scoreboard
 
 Stop following channel
 
-    !apogee unfollowchannel
+    !pb remove scoreboard
