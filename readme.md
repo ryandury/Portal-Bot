@@ -18,6 +18,7 @@ Stop following channel
     pb remove scoreboard
 
 ### Todo
+- [Use shards to count messages](https://firebase.google.com/docs/firestore/solutions/counters)
 - Separate command files
 - Documentation for setting up a dev environment
 - A "get commands" command
