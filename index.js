@@ -81,12 +81,12 @@ const getChannelStats = async (message) => {
 
         scoreboard.push({
             name: authorName,
-            value: `${userTally.size}`,
-            inline: true
+            count: userTally.size,
+            value: `${userTally.size} messages`
         })
     }
 
-    scoreboard.sort((a, b) => parseFloat(b.value) - parseFloat(a.value));
+    scoreboard.sort((a, b) => parseFloat(b.count) - parseFloat(a.count));
 
     return scoreboard.slice(0, 5);
 };
